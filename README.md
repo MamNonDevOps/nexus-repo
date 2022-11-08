@@ -1,5 +1,15 @@
 # nexus-repo
-![alt text](https://github.com/MamNonDevOps/nexus-repo/blob/main/images/overview_x2.png)
+![alt text](https://github.com/MamNonDevOps/nexus-repo/blob/main/images/overview_x1.png)
+
+## User-data
+```
+#!/bin/bash -ex
+yum -y update
+yum -y install docker git
+usermod -aG docker ec2-user
+systemctl enable docker
+systemctl start docker
+```
 
 ## EC2 Nexus repo
 t2.medium (2 vCPU, 4 GB Ram), recommend 4 vCPU trở lên
@@ -14,6 +24,15 @@ Mở thêm port và sử dụng đường dẫn tuyệt đối $(pwd)
 ```
 docker run -d -p 8081:8081 -p 8082:8082 --name nexus -v $(pwd)/nexus-data:/nexus-data sonatype/nexus3
 ```
+
+Kiểm tra log container `nexus` xem đã hoàn thành cài đặt hay chưa `docker log -f nexus`
+
+Giả sử public ip của máy ảo là `54.242.135.2`. Tiến hành truy cập `54.242.135.2:8081` để vào giao diện quản trị
+
+Tài khoản đăng nhập mặc định là `admin`, password xem tại file /nexus-data/admin.password
+
+---
+
 Tạo Blod store cho từng Repo
 
 Docker-hosted
@@ -28,12 +47,9 @@ Docker-group, thêm Docker-hosted và Doker-proxy
 - pull các image trên repo, nếu repo không có thì lấy image từ remote repository khác (Docker hub) (giống Docker proxy)
 - ?? push
 
-## EC2 CICD
-local user-name: `nx-cicd`
+---
 
-role: `nx-cicd`
-
-privilege:
+Tạo role `nx-cicd`, có các privilege:
 * nx-healthcheck-read
 * nx-search-read
 * nx-repository-view-*-*-read
@@ -41,49 +57,57 @@ privilege:
 * nx-repository-view-*-*-edit
 * nx-repository-view-*-*-add
 
-command login:
-```
-docker login -u nx-cicd 54.174.173.12:8082
-```
-với giả định `54.174.173.12` là public ip của EC2 Nexus repo, port 8082 đã mở để thao tác push/pull
+Tạo local user `nx-cicd` với role trên
 
-command tag:
-```
-docker tag image-name:tag new-image-name:new-tag
-```
-command push image:
-```
-docker push 54.174.173.12:8082/new-image-name:new-tag
-```
-
----
-Error response from daemon: Get "https://54.174.173.12:8082/v2/": http: server gave HTTP response to HTTPS client
-```
-sudo su
-touch /etc/docker/daemon.json
-echo "{ \"insecure-registries\":[\"54.174.173.12:8082\"] }" >> /etc/docker/daemon.json
-systemctl restart docker
-su ec2-user
-```
-
-## EC2 private
-local user-name: `nx-ec2`
-
-role: `nx-ec2`
-
-privilege:
+Tạo role `nx-ec2`, có các privilege:
 * nx-healthcheck-read
 * nx-search-read
 * nx-repository-view-*-*-read
 * nx-repository-view-*-*-browse
 
-command login:
+Tạo local user `nx-ec2` với role trên
+
+---
+
+Actice thêm **Docker Bearer Token Realm** trong cài đặt Security -> Realms
+
+## EC2 CICD
+
+command login: (sử dụng user `nx-cicd`)
 ```
-docker login -u nx-ec2 54.174.173.12:8082
+docker login -u nx-cicd 10.0.0.1:8082
+```
+
+Với `10.0.0.1` là private ip của EC2 Nexus repo. Có thể sử dụng public ip của EC2 Nexus repo để thay thế
+
+command tag:
+```
+docker tag image-name:tag 10.0.0.1:8082/image-name:tag
+```
+command push image:
+```
+docker push 10.0.0.1:8082/image-name:tag
+```
+
+---
+Error response from daemon: Get "https://10.0.0.1:8082/v2/": http: server gave HTTP response to HTTPS client
+```
+sudo su
+touch /etc/docker/daemon.json
+echo "{ \"insecure-registries\":[\"172.31.19.205:8082\"] }" >> /etc/docker/daemon.json
+systemctl restart docker
+su ec2-user
+```
+
+## EC2 private
+
+command login: (sử dụng user `nx-ec2`)
+```
+docker login -u nx-ec2 10.0.0.1:8082
 ```
 command pull:
 ```
-docker pull 54.174.173.12:8082/new-image-name:new-tag
+docker pull 10.0.0.1:8082/image-name:tag
 ```
 
 ## Tối ưu

@@ -27,7 +27,12 @@ docker run -d -p 8081:8081 -p 8082:8082 --name nexus -v $(pwd)/nexus-data:/nexus
 
 Kiểm tra log container `nexus` xem đã hoàn thành cài đặt hay chưa `docker log -f nexus`
 
-Giả sử public ip của máy ảo là `54.242.135.2`. Tiến hành truy cập `54.242.135.2:8081` để vào giao diện quản trị
+---
+### SSH tunel từ localhost
+```
+ssh -i key-pair.pem -L 8081:10.0.0.1:8081 ec2-user@54.0.0.1
+```
+Từ localhost, truy cập vào web `locahost:8081` để mở giao diện quản trị
 
 Tài khoản đăng nhập mặc định là `admin`, password xem tại file /nexus-data/admin.password
 
@@ -59,17 +64,11 @@ Tạo role `nx-cicd`, có các privilege:
 
 Tạo local user `nx-cicd` với role trên
 
-Tạo role `nx-ec2`, có các privilege:
-* nx-healthcheck-read
-* nx-search-read
-* nx-repository-view-*-*-read
-* nx-repository-view-*-*-browse
-
-Tạo local user `nx-ec2` với role trên
-
 ---
 
 Actice thêm **Docker Bearer Token Realm** trong cài đặt Security -> Realms
+
+Allow anonymous user to acces the server trong cài đặt Security -> Anonymous Access
 
 ## EC2 CICD
 
@@ -78,7 +77,7 @@ command login: (sử dụng user `nx-cicd`)
 docker login -u nx-cicd 10.0.0.1:8082
 ```
 
-Với `10.0.0.1` là private ip của EC2 Nexus repo. Có thể sử dụng public ip của EC2 Nexus repo để thay thế
+Với `10.0.0.1` là private ip của EC2 Nexus repo
 
 command tag:
 ```
@@ -101,10 +100,6 @@ su ec2-user
 
 ## EC2 private
 
-command login: (sử dụng user `nx-ec2`)
-```
-docker login -u nx-ec2 10.0.0.1:8082
-```
 command pull:
 ```
 docker pull 10.0.0.1:8082/image-name:tag
@@ -113,6 +108,3 @@ docker pull 10.0.0.1:8082/image-name:tag
 ## Tối ưu
 EC2 Nexus repo chỉ cần hoạt động khi cần push hoặc pull
 => nên để tiết kiệm thì chỉ cần Start khi cần dùng, Stop sau khi dùng xong.
-=> Nhưng như vậy sẽ địa chỉ public ip bị thay đổi sau mỗi lần restart
-
-=> gộp chung EC2 Nexus repo và EC2 CICD, dùng Elastic IP

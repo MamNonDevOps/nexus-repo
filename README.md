@@ -99,6 +99,12 @@ su ec2-user
 ```
 
 ## EC2 private
+Các server pull image về cần tạo user, role riêng
+Role `nx-ec2`, có các privilege:
+* nx-healthcheck-read
+* nx-search-read
+* nx-repository-view-*-*-read
+* nx-repository-view-*-*-browse
 
 command pull:
 ```
@@ -107,4 +113,7 @@ docker pull 10.0.0.1:8082/image-name:tag
 
 ## Tối ưu
 EC2 Nexus repo chỉ cần hoạt động khi cần push hoặc pull
-=> nên để tiết kiệm thì chỉ cần Start khi cần dùng, Stop sau khi dùng xong.
+=> nên để tiết kiệm thì chỉ cần Start khi cần dùng, Stop sau khi dùng xong
+=> ?? địa chỉ public ip bị thay đổi sau mỗi lần restart
+
+=> gộp chung EC2 Nexus repo và EC2 CICD, dùng Elastic IP

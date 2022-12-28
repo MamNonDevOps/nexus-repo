@@ -100,12 +100,13 @@ su ec2-user
 
 ## EC2 private
 Các server pull image về cần tạo user, role riêng
+
 Role `nx-ec2`, có các privilege:
 * nx-healthcheck-read
 * nx-search-read
 * nx-repository-view-*-*-read
 * nx-repository-view-*-*-browse
-
+---
 command pull:
 ```
 docker pull 10.0.0.1:8082/image-name:tag
